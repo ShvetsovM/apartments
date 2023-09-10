@@ -543,6 +543,80 @@ ORDER BY AVG(rent_new) DESC;
 
 ***
 
+# *Хранимая процедура
+<details>
+<summary> Поиск квартиры </summary>
+В дополнение к аналитической работе, я создал хранимую процедуру, которая может помочь находить объявления по вводимым параметрам.
+
+## Создание процедуры
+
+````sql
+CREATE PROCEDURE SearchApartments
+	@metro_station varchar(50),
+	@time_to_metro varchar(50),
+	@area varchar(50),
+	@rent varchar(50)
+
+AS
+BEGIN
+	SELECT overview, rent, metro_station, time_to_metro, link
+	FROM Apartments
+	WHERE 
+		(@metro_station IS NULL OR LOWER(metro_station) like '%'+ LOWER(@metro_station) + '%') AND 
+		(@time_to_metro IS NULL OR time_to_metro <= CAST(REPLACE(@time_to_metro, ' мин', '') AS FLOAT)) AND 
+		(@area IS NULL OR area >= CAST(REPLACE(@area, ' кв', '') AS FLOAT)) AND
+		(@rent IS NULL OR rent_new <= CAST(REPLACE(@rent, ' руб', '') AS FLOAT));
+END;
+````
+Пользователь должен ввести название метро, максимальное время до него, минимальную площадь, а также максимальную месячную плату за аренду в таком формате:
+
+````sql
+EXEC SearchApartments 'Бабушкинская', '15 мин', '30 кв', '50000 руб';
+````
+Если какой то из критериев не интересует пользователя, нужно ввести значение NULL:
+
+````sql
+EXEC SearchApartments NULL, '15 мин', '30 кв', NULL;
+````
+## Выполнение процедуры 
+
+**Запрос:**
+
+````sql
+EXEC SearchApartments 'Бабушкинская', '15 мин', '30 кв', '50000 руб';
+````
+**Результат:**
+
+| overview                               | rent                | metro_station | time_to_metro | link                                                                                     |
+|----------------------------------------|---------------------|---------------|---------------|------------------------------------------------------------------------------------------|
+| 1-к. квартира, 34,9 м², 9/12 эт.       | 45 000 ₽ в месяц   | Бабушкинская  | 5             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_349m_912et._3319449837    |
+| 1-к. квартира, 32 м², 4/5 эт.          | 34 000 ₽ в месяц   | Бабушкинская  | 13            | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_32m_45et._2704641934     |
+| 1-к. квартира, 39,4 м², 2/17 эт.       | 40 000 ₽ в месяц   | Бабушкинская  | 13            | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_394m_217et._3396550547    |
+
+***
+**Запрос:**
+
+````sql
+EXEC SearchApartments NULL, '10 мин', '20 кв', '30000 руб';
+````
+**Результат:**
+
+| overview                               | rent                | metro_station            | time_to_metro | link                                                                                     |
+|----------------------------------------|---------------------|--------------------------|---------------|------------------------------------------------------------------------------------------|
+| 1-к. квартира, 26 м², 2/5 эт.          | 30 000 ₽ в месяц   | Кузьминки                | 8             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_26m_25et._3419150713    |
+| 1-к. квартира, 35 м², 5/9 эт.          | 30 000 ₽ в месяц   | Орехово                  | 8             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_35m_59et._3049980415    |
+| 1-к. квартира, 40 м², 2/22 эт.         | 28 000 ₽ в месяц   | Улица Старокачаловская   | 8             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_40m_222et._2875150414    |
+| 1-к. квартира, 37 м², 7/12 эт.         | 30 000 ₽ в месяц   | Перово                   | 5             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_37m_712et._3170968304    |
+| 1-к. квартира, 37 м², 7/9 эт.          | 30 000 ₽ в месяц   | Отрадное                 | 8             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_37m_79et._3145945902    |
+| Квартира-студия, 23 м², 14/17 эт.      | 30 000 ₽ в месяц   | Некрасовка               | 8             | https://www.avito.ru/moskva/kvartiry/kvartira-studiya_23m_1417et._3240655447 |
+| 1-к. квартира, 32 м², 8/9 эт.          | 30 000 ₽ в месяц   | Беломорская              | 8             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_32m_89et._3240143297    |
+| 1-к. квартира, 38 м², 2/12 эт.         | 30 000 ₽ в месяц   | Бунинская аллея          | 8             | https://www.avito.ru/moskva/kvartiry/1-k._kvartira_38m_212et._1649205943    |
+
+
+</details>
+
+***
+
 # Заключение
 
 В рамках данного проекта был проведен анализ данных объявлений о сдаче квартир в аренду с целью подтверждения или опровержения предварительных гипотез и ответа на ключевые вопросы, связанные с рынком аренды жилья. 
