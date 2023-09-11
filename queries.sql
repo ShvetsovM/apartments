@@ -156,6 +156,14 @@ GROUP BY
         ELSE 'Below Average'
     END;
 
+--Сравнение округов по количеству объявлений
+SELECT adm_area, COUNT(*) AS offers_amount, ROUND(CAST(COUNT(*) AS FLOAT) / SUM(COUNT(*)) OVER () * 100,2) AS "percentage"
+FROM Apartments AS ap
+INNER JOIN Metro_stations AS ms
+    ON ap.metro_station = ms.metro_station
+GROUP BY adm_area
+ORDER BY COUNT(*) DESC;
+
 --Сравнение средней арендной платы квартир в разных административных округах Москвы:
 SELECT adm_area, COUNT(*) AS offers_amount, AVG(rent_new) AS average_rent
 FROM Apartments AS ap
